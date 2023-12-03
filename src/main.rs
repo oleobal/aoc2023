@@ -22,6 +22,8 @@ fn main() {
     let mut puzzles: HashMap<String, fn(String)> = HashMap::new();
     puzzles.insert("1-1".to_string(), day1::p1); 
     puzzles.insert("1-2".to_string(), day1::p2); 
+    puzzles.insert("2-1".to_string(), day2::p1); 
+    puzzles.insert("2-2".to_string(), day2::p2); 
 
     let input = fs::read_to_string(&args.input_path).expect("Unable to read file");
     

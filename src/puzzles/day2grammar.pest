@@ -1,0 +1,25 @@
+WHITESPACE = _{ " " }
+
+GameId = { ASCII_DIGIT+ }
+
+Number = { ASCII_DIGIT+ }
+
+Color = {
+    "blue" | "red" | "green"
+}
+
+Intro = _{
+    "Game" ~ GameId
+}
+
+Cubes = {
+    Number ~ Color
+}
+
+CubeDraw = {
+    Cubes ~ ( "," ~ Cubes)*
+}
+
+Game = _{
+    Intro ~ ":" ~ CubeDraw ~ ( ";" ~ CubeDraw )*
+}
