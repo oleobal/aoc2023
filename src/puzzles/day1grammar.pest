@@ -1,0 +1,19 @@
+chaff = _{
+    ASCII_ALPHA
+}
+digit = {
+    ASCII_DIGIT
+    | "one"
+    | "two"
+    | "three"
+    | "four"
+    | "five"
+    | "six"
+    | "seven"
+    | "eight"
+    | "nine"
+}
+
+expr = _{
+    (digit | chaff)+
+}
