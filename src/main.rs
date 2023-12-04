@@ -26,6 +26,8 @@ fn main() {
     puzzles.insert("2-2".to_string(), day2::p2); 
     puzzles.insert("3-1".to_string(), day3::p1); 
     puzzles.insert("3-2".to_string(), day3::p2); 
+    puzzles.insert("4-1".to_string(), day4::p1); 
+    puzzles.insert("4-2".to_string(), day4::p2); 
 
     let input = fs::read_to_string(&args.input_path).expect("Unable to read file");
     

@@ -1,0 +1,26 @@
+WHITESPACE = _{ " " }
+
+CardId = @{ ASCII_DIGIT+ }
+
+Number = @{ ASCII_DIGIT+ }
+
+Intro = _{
+    "Card" ~ CardId
+}
+
+ScratchedNumbers = {
+    Number+
+}
+
+WinningNumbers = {
+    Number+
+}
+
+
+Card = _{
+    Intro ~ ":" ~ WinningNumbers ~ "|" ~ ScratchedNumbers
+}
+
+Cards = _{
+    Card ~ ( "\n" ~ Card)*
+}
