@@ -39,19 +39,26 @@ impl IndexMut<&'_ str> for Game {
     }
 }
 
-
-
 fn parse_game(input: &str) -> Game {
     let mut tokens = Day2Parser::parse(Rule::Game, input).unwrap();
     let game_id = tokens.nth(0).unwrap().as_str().parse::<i32>().unwrap();
-    
-    let mut required_cubes = Game {game_id: game_id, red:0, green:0, blue:0 };
-    for draw in tokens.clone()
-    {
-        for cubeset in draw.into_inner()
-        {
+
+    let mut required_cubes = Game {
+        game_id: game_id,
+        red: 0,
+        green: 0,
+        blue: 0,
+    };
+    for draw in tokens.clone() {
+        for cubeset in draw.into_inner() {
             let mut pairs = cubeset.into_inner();
-            let nb = pairs.next().unwrap().as_str().trim().parse::<i32>().unwrap();
+            let nb = pairs
+                .next()
+                .unwrap()
+                .as_str()
+                .trim()
+                .parse::<i32>()
+                .unwrap();
             let color = pairs.last().unwrap().as_str().trim();
             required_cubes[color] = max(required_cubes[color], nb);
         }
@@ -63,16 +70,13 @@ pub fn p1(input: String) {
     let mut sum = 0;
     let lines = input.trim().split("\n");
     for line in lines {
-        
         let required_cubes = parse_game(line);
-        if required_cubes.red <= 12 && required_cubes.green <= 13 && required_cubes.blue <= 14
-        {
+        if required_cubes.red <= 12 && required_cubes.green <= 13 && required_cubes.blue <= 14 {
             sum += required_cubes.game_id;
         }
     }
     println!("{}", sum);
 }
-
 
 pub fn p2(input: String) {
     let mut sum = 0;

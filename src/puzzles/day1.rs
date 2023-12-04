@@ -1,13 +1,19 @@
-use std::collections::HashMap;
 use pest::Parser;
 use pest_derive::Parser;
+use std::collections::HashMap;
 
 pub fn p1(input: String) {
     let lines = input.trim().split("\n");
     let mut sum = 0;
     for line in lines {
-        let first = line.chars().nth(line.find(char::is_numeric).unwrap()).unwrap();
-        let last = line.chars().nth(line.rfind(char::is_numeric).unwrap()).unwrap();
+        let first = line
+            .chars()
+            .nth(line.find(char::is_numeric).unwrap())
+            .unwrap();
+        let last = line
+            .chars()
+            .nth(line.rfind(char::is_numeric).unwrap())
+            .unwrap();
         sum += format!("{}{}", first, last).parse::<i32>().unwrap();
     }
     println!("{}", sum)
@@ -45,7 +51,7 @@ pub fn p2(input: String) {
         let tokens = Day1Parser::parse(Rule::expr, line).unwrap();
         let first = digits[tokens.clone().next().unwrap().as_str()];
         let last = digits[tokens.clone().last().unwrap().as_str()];
-        sum += first*10+last;
+        sum += first * 10 + last;
     }
     println!("{}", sum)
 }
