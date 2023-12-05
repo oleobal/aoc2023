@@ -1,0 +1,27 @@
+WHITESPACE = _{ " " }
+
+Number = @{ ASCII_DIGIT+ }
+
+NumberList = { Number+ ~ NEWLINE+}
+
+Word = @{ ASCII_ALPHA+ }
+
+Seeds = _{
+    "seeds:" ~ NumberList
+}
+
+MapHeaderSpecifier = @{
+    Word ~ "-to-" ~ Word
+}
+
+MapHeader = _{
+    MapHeaderSpecifier ~ "map:" ~ NEWLINE
+}
+
+Map = {
+    MapHeader ~ NumberList+
+}
+
+Almanac = _{
+    Seeds ~ Map+
+}
