@@ -17,7 +17,7 @@ fn main() {
     let args = CliArgs::parse();
 
     let mut puzzles: HashMap<String, fn(String)> = HashMap::new();
-    register_puzzles_for_days!(5);
+    register_puzzles_for_days!(6);
 
     let input = fs::read_to_string(&args.input_path).expect("Unable to read file");
 

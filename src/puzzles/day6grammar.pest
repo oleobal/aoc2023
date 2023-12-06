@@ -1,0 +1,15 @@
+WHITESPACE = _{ " " | NEWLINE }
+
+Number = @{ ASCII_DIGIT+ }
+
+NumberList = { Number+ }
+
+Records = _{
+    "Time:" ~ NumberList ~ "Distance:" ~ NumberList
+}
+
+WSNumber = { ASCII_DIGIT+ }
+
+OneBigRecord = _{
+    "Time:" ~ WSNumber ~ "Distance:" ~ WSNumber
+}
