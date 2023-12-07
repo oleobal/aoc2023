@@ -1,0 +1,11 @@
+WHITESPACE = _{ " " }
+
+Number = @{ ASCII_DIGIT+ }
+
+Card = { ASCII_ALPHA | ASCII_DIGIT }
+
+Hand = ${ Card ~ Card ~ Card ~ Card ~ Card }
+
+Bid = { Hand ~ Number ~ NEWLINE }
+
+Bids = _{Bid+}

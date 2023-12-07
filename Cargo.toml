@@ -10,4 +10,7 @@ clap = { version = "4.0", features = ["derive"] }
 pest = "2.7.5"
 pest_derive = "2.7.5"
 petgraph = "0.6.4"
+strum = "0.25"
+strum_macros = "0.25"
+
 util = { path = "util" }
