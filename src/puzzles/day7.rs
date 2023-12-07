@@ -1,9 +1,9 @@
 use std::cmp::{Eq, Ord};
 use std::collections::HashMap;
-use std::iter::zip;
-use std::str::FromStr;
 use std::hash::Hash;
 use std::hash::Hasher;
+use std::iter::zip;
+use std::str::FromStr;
 
 use pest::Parser;
 use pest_derive::Parser;
@@ -11,6 +11,8 @@ use pest_derive::Parser;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 use strum_macros::EnumString;
+
+const REAL_POKER_RULES: bool = false;
 
 #[derive(Parser)]
 #[grammar = "src/puzzles/day7grammar.pest"]
@@ -87,9 +89,13 @@ impl FromStr for Hand {
             .for_each(|c| {
                 *(card_count.entry(c).or_insert(0)) += 1;
             });
-        
+
         let hand_type = get_type(&card_count);
-        return Ok(Hand { id: input.to_string(), cards: card_count, hand_type: hand_type });
+        return Ok(Hand {
+            id: input.to_string(),
+            cards: card_count,
+            hand_type: hand_type,
+        });
         //    _ => Err(()),
     }
 }
@@ -122,7 +128,11 @@ fn get_type(cards: &HashMap<Card, u32>) -> (HandType, Vec<Card>, Vec<Card>) {
         return (HandType::FourK, res, lo);
     } else if let Some((res, lo)) = find_cards(&cards, 3) {
         if let Some((res_p, _)) = find_cards(&cards, 2) {
-            return (HandType::FullHouse, Vec::from([res[0], res_p[0]]), Vec::new())
+            return (
+                HandType::FullHouse,
+                Vec::from([res[0], res_p[0]]),
+                Vec::new(),
+            );
         }
         return (HandType::ThreeK, res, lo);
     } else if let Some((res, lo)) = find_cards(&cards, 2) {
@@ -140,25 +150,37 @@ fn get_type(cards: &HashMap<Card, u32>) -> (HandType, Vec<Card>, Vec<Card>) {
     return (HandType::HighCard, res, lo);
 }
 
-
 impl std::cmp::Ord for Hand {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-
         if self.hand_type.0 == other.hand_type.0 {
-            // iterate through associated cards first, then leftovers
-            for (s, o) in zip(self.hand_type.1.iter().rev(), other.hand_type.1.iter().rev()){
-                if s == o {
-                    continue;
+            if REAL_POKER_RULES {
+                // iterate through associated cards first, then leftovers
+                for (s, o) in zip(
+                    self.hand_type.1.iter().rev(),
+                    other.hand_type.1.iter().rev(),
+                ) {
+                    if s == o {
+                        continue;
+                    }
+                    return s.cmp(o);
                 }
-                return s.cmp(o);
-            }
-            for (s, o) in zip(self.hand_type.2.iter().rev(), other.hand_type.2.iter().rev()) {
-                if s == o {
-                    continue;
+                for (s, o) in zip(
+                    self.hand_type.2.iter().rev(),
+                    other.hand_type.2.iter().rev(),
+                ) {
+                    if s == o {
+                        continue;
+                    }
+                    return s.cmp(o);
                 }
-                return s.cmp(o);
+                return std::cmp::Ordering::Equal;
+            } else {
+                for (s, o) in zip(self.id.chars(), other.id.chars()) {
+                    if s == o {
+                        continue }
+                    return Card::from_str(&s.to_string()).cmp(&Card::from_str(&o.to_string()));
+                }
             }
-            return std::cmp::Ordering::Equal;
         }
         return self.hand_type.0.cmp(&other.hand_type.0);
     }
@@ -178,7 +200,7 @@ impl PartialEq for Hand {
 
 impl Eq for Hand {}
 
-fn parse_bids(input: &str) -> Vec<(Hand, u32)>{
+fn parse_bids(input: &str) -> Vec<(Hand, u32)> {
     let mut tokens = Day6Parser::parse(Rule::Bids, input).unwrap();
 
     let mut result = Vec::new();
@@ -195,13 +217,13 @@ fn parse_bids(input: &str) -> Vec<(Hand, u32)>{
 pub fn p1(input: String) {
     let mut bids = parse_bids(&input);
     bids.sort_by(|a, b| a.0.cmp(&b.0));
-    
+
     let mut sum: u64 = 0;
     for (i, (hand, bid)) in bids.iter().enumerate() {
         //println!("{:?}", hand);
-        sum += ((i+1) as u64)*(*bid as u64);
+        sum += ((i + 1) as u64) * (*bid as u64);
     }
-    
+
     println!("{}", sum);
 }
 
