@@ -1,16 +1,11 @@
 use std::cmp::{Eq, Ord};
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::hash::Hasher;
 use std::iter::zip;
 use std::str::FromStr;
 
 use pest::Parser;
 use pest_derive::Parser;
-
-use strum::IntoEnumIterator;
-use strum_macros::EnumIter;
-use strum_macros::EnumString;
 
 const REAL_POKER_RULES: bool = false;
 
@@ -29,51 +24,27 @@ enum HandType {
     FiveK,
 }
 
-// order: "AKQJT98765432"
-#[derive(Hash, PartialEq, Eq, PartialOrd, Ord, Debug, EnumIter, Clone, Copy)]
-enum Card {
-    C2,
-    C3,
-    C4,
-    C5,
-    C6,
-    C7,
-    C8,
-    C9,
-    CT,
-    CJ,
-    CQ,
-    CK,
-    CA,
+fn get_normal_card_rank(c: char) -> usize {
+    "AKQJT98765432"
+        .chars()
+        .rev()
+        .position(|it| it == c)
+        .unwrap()
 }
 
-impl FromStr for Card {
-    type Err = ();
-    fn from_str(input: &str) -> Result<Card, Self::Err> {
-        match input {
-            "A" => Ok(Card::CA),
-            "K" => Ok(Card::CK),
-            "Q" => Ok(Card::CQ),
-            "J" => Ok(Card::CJ),
-            "T" => Ok(Card::CT),
-            "9" => Ok(Card::C9),
-            "8" => Ok(Card::C8),
-            "7" => Ok(Card::C7),
-            "6" => Ok(Card::C6),
-            "5" => Ok(Card::C5),
-            "4" => Ok(Card::C4),
-            "3" => Ok(Card::C3),
-            "2" => Ok(Card::C2),
-            _ => Err(()),
-        }
-    }
+fn get_card_rank(c: char) -> usize {
+    "AKQT98765432J"
+        .chars()
+        .rev()
+        .position(|it| it == c)
+        .unwrap()
 }
 
 #[derive(Debug)]
 struct Hand {
     id: String,
-    cards: HashMap<Card, u32>,
-    hand_type: (HandType, Vec<Card>, Vec<Card>),
+    cards: HashMap<char, u32>,
+    hand_type: (HandType, Vec<char>, Vec<char>),
 }
 
 impl FromStr for Hand {
@@ -83,14 +54,11 @@ impl FromStr for Hand {
 
         let mut card_count = HashMap::new();
 
-        input
-            .chars()
-            .map(|c| Card::from_str(c.encode_utf8(&mut char_buffer)).unwrap())
-            .for_each(|c| {
-                *(card_count.entry(c).or_insert(0)) += 1;
-            });
+        input.chars().for_each(|c| {
+            *(card_count.entry(c).or_insert(0)) += 1;
+        });
 
-        let hand_type = get_type(&card_count);
+        let hand_type = get_jokerized_type(&card_count);
         return Ok(Hand {
             id: input.to_string(),
             cards: card_count,
@@ -100,7 +68,8 @@ impl FromStr for Hand {
     }
 }
 
-fn find_cards(cards: &HashMap<Card, u32>, target_count: u32) -> Option<(Vec<Card>, Vec<Card>)> {
+/// find what keys in <cards> are present <target_count> times
+fn find_cards(cards: &HashMap<char, u32>, target_count: u32) -> Option<(Vec<char>, Vec<char>)> {
     // there's probably a more elegant way to do this..
     let mut results = Vec::new();
     let mut leftovers = Vec::new();
@@ -112,17 +81,16 @@ fn find_cards(cards: &HashMap<Card, u32>, target_count: u32) -> Option<(Vec<Card
         }
     }
     if results.len() > 0 {
-        if results.len() > 1 {
-            results.sort_unstable();
-        }
+        results.sort_unstable_by(|a, b| get_card_rank(*a).cmp(&get_card_rank(*b)));
+        leftovers.sort_unstable_by(|a, b| get_card_rank(*a).cmp(&get_card_rank(*b)));
         return Some((results, leftovers));
     }
     return None;
 }
 
 /// returns (HandType, associated card(s), leftover card(s))
-fn get_type(cards: &HashMap<Card, u32>) -> (HandType, Vec<Card>, Vec<Card>) {
-    if let Some((res, lo)) = find_cards(&cards, 5) {
+fn get_type(cards: &HashMap<char, u32>) -> (HandType, Vec<char>, Vec<char>) {
+    if let Some((res, _)) = find_cards(&cards, 5) {
         return (HandType::FiveK, res, Vec::new());
     } else if let Some((res, lo)) = find_cards(&cards, 4) {
         return (HandType::FourK, res, lo);
@@ -130,7 +98,7 @@ fn get_type(cards: &HashMap<Card, u32>) -> (HandType, Vec<Card>, Vec<Card>) {
         if let Some((res_p, _)) = find_cards(&cards, 2) {
             return (
                 HandType::FullHouse,
-                Vec::from([res[0], res_p[0]]),
+                Vec::from([res_p[0], res[0]]), // less valuable pair goes first
                 Vec::new(),
             );
         }
@@ -148,6 +116,23 @@ fn get_type(cards: &HashMap<Card, u32>) -> (HandType, Vec<Card>, Vec<Card>) {
     }
     let (res, lo) = find_cards(&cards, 1).unwrap();
     return (HandType::HighCard, res, lo);
+}
+
+fn get_jokerized_type(cards: &HashMap<char, u32>) -> (HandType, Vec<char>, Vec<char>) {
+    let base = get_type(cards);
+
+    if !cards.contains_key(&'J') {
+        return base;
+    }
+
+    let ideal_card = *base
+        .2.iter()
+        .chain(base.1.iter())
+        .filter(|c| **c != 'J').last().unwrap_or(&'A');
+    let mut new_hand = cards.clone();
+    *(new_hand.entry(ideal_card).or_insert(0)) += new_hand.remove(&'J').unwrap();
+
+    return get_type(&new_hand);
 }
 
 impl std::cmp::Ord for Hand {
@@ -177,8 +162,9 @@ impl std::cmp::Ord for Hand {
             } else {
                 for (s, o) in zip(self.id.chars(), other.id.chars()) {
                     if s == o {
-                        continue }
-                    return Card::from_str(&s.to_string()).cmp(&Card::from_str(&o.to_string()));
+                        continue;
+                    }
+                    return get_card_rank(s).cmp(&get_card_rank(o));
                 }
             }
         }
@@ -201,7 +187,7 @@ impl PartialEq for Hand {
 impl Eq for Hand {}
 
 fn parse_bids(input: &str) -> Vec<(Hand, u32)> {
-    let mut tokens = Day6Parser::parse(Rule::Bids, input).unwrap();
+    let tokens = Day6Parser::parse(Rule::Bids, input).unwrap();
 
     let mut result = Vec::new();
     for bid in tokens {
@@ -219,13 +205,10 @@ pub fn p1(input: String) {
     bids.sort_by(|a, b| a.0.cmp(&b.0));
 
     let mut sum: u64 = 0;
-    for (i, (hand, bid)) in bids.iter().enumerate() {
-        //println!("{:?}", hand);
+    for (i, (_hand, bid)) in bids.iter().enumerate() {
+        //println!("{:?}", _hand);
         sum += ((i + 1) as u64) * (*bid as u64);
     }
 
     println!("{}", sum);
 }
-
-// 246949886
-// 246954242
