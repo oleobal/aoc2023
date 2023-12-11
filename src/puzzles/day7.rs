@@ -24,16 +24,9 @@ enum HandType {
     FiveK,
 }
 
-fn get_normal_card_rank(c: char) -> usize {
-    "AKQJT98765432"
-        .chars()
-        .rev()
-        .position(|it| it == c)
-        .unwrap()
-}
 
 fn get_card_rank(c: char) -> usize {
-    "AKQT98765432J"
+    "AKQJT98765432X" // using X for special joker type
         .chars()
         .rev()
         .position(|it| it == c)
@@ -121,16 +114,16 @@ fn get_type(cards: &HashMap<char, u32>) -> (HandType, Vec<char>, Vec<char>) {
 fn get_jokerized_type(cards: &HashMap<char, u32>) -> (HandType, Vec<char>, Vec<char>) {
     let base = get_type(cards);
 
-    if !cards.contains_key(&'J') {
+    if !cards.contains_key(&'X') {
         return base;
     }
 
     let ideal_card = *base
         .2.iter()
         .chain(base.1.iter())
-        .filter(|c| **c != 'J').last().unwrap_or(&'A');
+        .filter(|c| **c != 'X').last().unwrap_or(&'A');
     let mut new_hand = cards.clone();
-    *(new_hand.entry(ideal_card).or_insert(0)) += new_hand.remove(&'J').unwrap();
+    *(new_hand.entry(ideal_card).or_insert(0)) += new_hand.remove(&'X').unwrap();
 
     return get_type(&new_hand);
 }
@@ -186,22 +179,22 @@ impl PartialEq for Hand {
 
 impl Eq for Hand {}
 
-fn parse_bids(input: &str) -> Vec<(Hand, u32)> {
+fn parse_bids(input: &str, string_op: fn(&str) -> String) -> Vec<(Hand, u32)> {
     let tokens = Day6Parser::parse(Rule::Bids, input).unwrap();
 
     let mut result = Vec::new();
     for bid in tokens {
         let mut i = bid.into_inner();
         result.push((
-            Hand::from_str(i.next().unwrap().as_str()).unwrap(),
+            Hand::from_str(&string_op(i.next().unwrap().as_str())).unwrap(),
             i.next().unwrap().as_str().parse::<u32>().unwrap(),
         ));
     }
     return result;
 }
 
-pub fn p1(input: String) {
-    let mut bids = parse_bids(&input);
+fn compute_sum(input: String, string_op: fn(&str) -> String) -> u64 {
+    let mut bids = parse_bids(&input, string_op);
     bids.sort_by(|a, b| a.0.cmp(&b.0));
 
     let mut sum: u64 = 0;
@@ -210,5 +203,15 @@ pub fn p1(input: String) {
         sum += ((i + 1) as u64) * (*bid as u64);
     }
 
-    println!("{}", sum);
+    return sum;
+}
+
+pub fn p1(input: String) {
+    println!("{}", compute_sum(input, |x| x.to_string()));
+}
+
+
+
+pub fn p2(input: String) {
+    println!("{}", compute_sum(input, |x| x.replace("J", "X")));
 }
