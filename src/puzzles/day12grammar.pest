@@ -1,6 +1,7 @@
 WHITESPACE = _{ " " }
 
-Map = @{ ("." | "#" | "?")+ }
+Brick = @{("." | "#" | "?")+}
+Map = @{ Brick+ }
 
 Number = { ASCII_DIGIT+ }
 

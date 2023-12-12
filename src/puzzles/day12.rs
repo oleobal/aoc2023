@@ -19,6 +19,7 @@ struct Day12Parser;
 #[derive(Debug, Hash, Clone)]
 struct Record {
     map: String,
+    bricks: Vec<String>,
     gsi: VecDeque<u32>, //henceforth christening this "group size info"
 }
 
@@ -47,7 +48,7 @@ fn parse_input(input: &str) -> Vec<Record> {
     let mut result = Vec::new();
     for record in tokens {
         let mut inner = record.into_inner();
-        let spring_map = inner.next().unwrap().as_str();
+        let spring_map = inner.next().unwrap();
 
         let dcount: VecDeque<u32> = inner
             .next()
@@ -57,7 +58,8 @@ fn parse_input(input: &str) -> Vec<Record> {
             .collect();
 
         result.push(Record {
-            map: spring_map.to_string(),
+            map: spring_map.as_str().to_string(),
+            bricks: spring_map.into_inner().map(|it| it.as_str().to_string()).collect(),
             gsi: dcount,
         });
     }
@@ -66,65 +68,23 @@ fn parse_input(input: &str) -> Vec<Record> {
 
 /// Returns whether a block (a string of #, ? and .) could answer the given GSI
 fn block_is_candidate(block: &str, gsi: &VecDeque<u32>) -> bool {
-    //let _full_str = block;
-    //let mut _index = 0;
-    let mut block = block.chars();
-    let mut gsi = gsi.clone();
-    let mut seclen = 0;
-    let mut seclen_starting_question_marks = 0;
-    while let Some(c) = block.next() {
-        //_index+=1;
-        //println!("{:>2} {} {:>15} | seclen: {:>2} (sqm: {:>2}) | gsi: {:?}", _index, c, &_full_str[_index..], seclen, seclen_starting_question_marks, gsi);
-        if c == '#' || c == '?' {
-            if c == '?' && seclen == seclen_starting_question_marks {
-                seclen_starting_question_marks+=1;
-            }
-            if c == '#' && gsi.len() == 0 {
-                return false;
-            }
-            
-            if gsi.len() == 0
-            {
-                continue;
-            }
-            seclen += 1;
-            if seclen == gsi[0] {
-                // we must check that it is exactly the right size
-                // -> it is followed by nothing
-                // -> it is followed by .
-                // -> it is followed by ?
-                // -> it starts with ?
-                let endc = block.next();
-                //_index+=1;
-                if endc.is_none() {
-                    gsi.pop_front();
-                    seclen = 0;
-                    seclen_starting_question_marks=0;
-                } else if endc.is_some_and(|c| c == '?' || c == '.') {
-                    gsi.pop_front();
-                    seclen = 0;
-                    seclen_starting_question_marks = 0;
-                } else if seclen_starting_question_marks > 0 {
-                    // I have a feeling this only covers one character and multiple are needed
-                    gsi.pop_front();
-                    seclen = 0;
-                    seclen_starting_question_marks = 0;
-                    //seclen -= 1;
-                    //seclen_starting_question_marks-=1;
-                } else {
-                    return false;
-                }
-            }
-        } else {
-            if seclen - seclen_starting_question_marks > 0 {
-                return false;
-            }
-            
-            seclen = 0;
-            seclen_starting_question_marks = 0;
+    if block.contains("?")
+    {
+        return true;
+    }
+    let mut blocks: Vec<_> = block.split(".").filter(|b| *b != "").collect();
+    if blocks.len() != gsi.len() {
+        return false;
+    }
+    for (i, b) in blocks.into_iter().enumerate() {
+        if i >= gsi.len() {
+            return false;
+        }
+        if b.len() != gsi[i].try_into().unwrap() {
+            return false;
         }
     }
-    return gsi.len() == 0;
+    return true;
 }
 
 fn build_tree(r: &Record) -> Graph<TreeNode, ()> {
@@ -184,7 +144,6 @@ fn build_tree(r: &Record) -> Graph<TreeNode, ()> {
 pub fn p1(input: String) {
     let records = parse_input(&input);
 
-    
     // let tree = build_tree(&records[5]);
     // println!("{:?}", Dot::with_config(&tree, &[Config::EdgeNoLabel]));
     // let s = tree.node_references().filter(|(_, node)| node.status==TreeNodeType::LEAF).count();
@@ -200,6 +159,7 @@ pub fn p1(input: String) {
         
         let s = tree.node_references().filter(|(_, node)| node.status==TreeNodeType::LEAF).count();
         //println!("{}", s);
+
         return s;
     }).sum::<usize>();
     println!("{}", sum);
