@@ -1,0 +1,11 @@
+WHITESPACE = _{ " " }
+
+Map = @{ ("." | "#" | "?")+ }
+
+Number = { ASCII_DIGIT+ }
+
+Counts = { Number ~ ("," ~ Number)*}
+
+Record = { Map ~ Counts ~ NEWLINE }
+
+Records = _{Record+}
