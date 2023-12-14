@@ -1,5 +1,4 @@
-use petgraph::dot::*;
-use petgraph::{graph::Graph, stable_graph::NodeIndex, Undirected};
+use petgraph::{graph::Graph, Undirected};
 use std::collections::{HashMap, HashSet};
 
 #[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]

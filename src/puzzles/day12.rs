@@ -1,13 +1,10 @@
 use std::{
     collections::VecDeque,
     fmt::{Display, Formatter},
-    iter,
-    str::Chars,
 };
 
-use petgraph::{dot::*, visit::{NodeCount, IntoNodeReferences}};
+use petgraph::visit::IntoNodeReferences;
 use petgraph::{graph::Graph, stable_graph::NodeIndex, Directed};
-use std::collections::{HashMap, HashSet};
 
 use pest::Parser;
 use pest_derive::Parser;
@@ -21,6 +18,12 @@ struct Record {
     map: String,
     bricks: Vec<String>,
     gsi: VecDeque<u32>, //henceforth christening this "group size info"
+}
+
+#[derive(Debug, Hash, Clone)]
+struct Block {
+    c: char,
+    len: u8,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -59,7 +62,10 @@ fn parse_input(input: &str) -> Vec<Record> {
 
         result.push(Record {
             map: spring_map.as_str().to_string(),
-            bricks: spring_map.into_inner().map(|it| it.as_str().to_string()).collect(),
+            bricks: spring_map
+                .into_inner()
+                .map(|it| it.as_str().to_string())
+                .collect(),
             gsi: dcount,
         });
     }
@@ -67,12 +73,13 @@ fn parse_input(input: &str) -> Vec<Record> {
 }
 
 /// Returns whether a block (a string of #, ? and .) could answer the given GSI
-fn block_is_candidate(block: &str, gsi: &VecDeque<u32>) -> bool {
-    if block.contains("?")
+/// this is for early pruning to avoid unnecessary computation
+fn block_is_candidate(input: &str, gsi: &VecDeque<u32>) -> bool {
+    if input.contains("?")
     {
         return true;
     }
-    let mut blocks: Vec<_> = block.split(".").filter(|b| *b != "").collect();
+    let mut blocks: Vec<_> = input.split(".").filter(|b| *b != "").collect();
     if blocks.len() != gsi.len() {
         return false;
     }
@@ -85,6 +92,20 @@ fn block_is_candidate(block: &str, gsi: &VecDeque<u32>) -> bool {
         }
     }
     return true;
+
+    // let mut blocks = VecDeque::<Block>::new();
+    // for c in input.chars() {
+    //     if !blocks.is_empty() {
+    //         let last_block = blocks.back_mut().unwrap();
+    //         if last_block.c == c {
+    //             last_block.len += 1;
+    //         } else {
+    //             blocks.push_back(Block { c: c, len: 1 });
+    //         }
+    //     } else {
+    //         blocks.push_back(Block { c: c, len: 1 });
+    //     }
+    // }
 }
 
 fn build_tree(r: &Record) -> Graph<TreeNode, ()> {
@@ -126,7 +147,6 @@ fn build_tree(r: &Record) -> Graph<TreeNode, ()> {
             _expand_tree(tree, new_node, gsi, ".");
         }
     }
-    
 
     let root_node_type = _determine_map_type(&r.map, &r.gsi);
     let root_node = tree.add_node(TreeNode {
@@ -137,34 +157,58 @@ fn build_tree(r: &Record) -> Graph<TreeNode, ()> {
         _expand_tree(&mut tree, root_node, &r.gsi, "#");
         _expand_tree(&mut tree, root_node, &r.gsi, ".");
     }
-    
+
     return tree;
 }
 
 pub fn p1(input: String) {
     let records = parse_input(&input);
 
-    // let tree = build_tree(&records[5]);
-    // println!("{:?}", Dot::with_config(&tree, &[Config::EdgeNoLabel]));
-    // let s = tree.node_references().filter(|(_, node)| node.status==TreeNodeType::LEAF).count();
-    // println!("{}", s);
-    
-    // let c = block_is_candidate("#.##", &VecDeque::from([1]));
-    // println!("{}", c);
-    
-    
-    let sum = records.into_iter().map(|r| {
-        let tree = build_tree(&r);
-        //println!("{:?}", Dot::with_config(&tree, &[Config::EdgeNoLabel]));
-        
-        let s = tree.node_references().filter(|(_, node)| node.status==TreeNodeType::LEAF).count();
-        //println!("{}", s);
+    let sum = records
+        .into_iter()
+        .map(|r| {
+            let tree = build_tree(&r);
+            //println!("{:?}", Dot::with_config(&tree, &[Config::EdgeNoLabel]));
 
-        return s;
-    }).sum::<usize>();
+            let s = tree
+                .node_references()
+                .filter(|(_, node)| node.status == TreeNodeType::LEAF)
+                .count();
+            //println!("{}", s);
+
+            return s;
+        })
+        .sum::<usize>();
     println!("{}", sum);
-    
-    
-    
-    //println!("{:?}", tree);
+}
+
+pub fn p2(input: String) {
+    let records = parse_input(&input);
+
+    let unfolded_records = records.into_iter().map(|r| {
+        let blen = r.bricks.len() * 5;
+        let gsilen = r.gsi.len() * 5;
+        Record {
+            map: r.map.repeat(5),
+            bricks: r.bricks.into_iter().cycle().take(blen).collect(),
+            gsi: r.gsi.into_iter().cycle().take(gsilen).collect(),
+        }
+    });
+
+    let sum = unfolded_records
+        .into_iter()
+        .map(|r| {
+            let tree = build_tree(&r);
+            //println!("{:?}", Dot::with_config(&tree, &[Config::EdgeNoLabel]));
+
+            let s = tree
+                .node_references()
+                .filter(|(_, node)| node.status == TreeNodeType::LEAF)
+                .count();
+            //println!("{}", s);
+
+            return s;
+        })
+        .sum::<usize>();
+    println!("{}", sum);
 }

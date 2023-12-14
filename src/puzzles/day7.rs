@@ -36,15 +36,13 @@ fn get_card_rank(c: char) -> usize {
 #[derive(Debug)]
 struct Hand {
     id: String,
-    cards: HashMap<char, u32>,
+    _cards: HashMap<char, u32>,
     hand_type: (HandType, Vec<char>, Vec<char>),
 }
 
 impl FromStr for Hand {
     type Err = ();
     fn from_str(input: &str) -> Result<Hand, Self::Err> {
-        let mut char_buffer: [u8; 4] = [0; 4];
-
         let mut card_count = HashMap::new();
 
         input.chars().for_each(|c| {
@@ -54,7 +52,7 @@ impl FromStr for Hand {
         let hand_type = get_jokerized_type(&card_count);
         return Ok(Hand {
             id: input.to_string(),
-            cards: card_count,
+            _cards: card_count,
             hand_type: hand_type,
         });
         //    _ => Err(()),
