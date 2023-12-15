@@ -79,7 +79,7 @@ fn block_is_candidate(input: &str, gsi: &VecDeque<u32>) -> bool {
     {
         return true;
     }
-    let mut blocks: Vec<_> = input.split(".").filter(|b| *b != "").collect();
+    let blocks: Vec<_> = input.split(".").filter(|b| *b != "").collect();
     if blocks.len() != gsi.len() {
         return false;
     }
