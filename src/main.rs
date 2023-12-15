@@ -24,6 +24,8 @@ fn main() {
     register_puzzle!(12, 2);
     register_puzzle!(14, 1);
     register_puzzle!(14, 2);
+    register_puzzle!(15, 1);
+    register_puzzle!(15, 2);
 
     let input = fs::read_to_string(&args.input_path).expect("Unable to read file");
 
