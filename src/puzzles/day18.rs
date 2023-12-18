@@ -105,6 +105,28 @@ fn parse_input(input: String) -> (Vec<Edge>, Point, Point) {
     return (edges, farthest_ul_point, farthest_dr_point);
 }
 
+fn parse_input_p2(input: String) -> (Vec<Edge>, Point, Point) {
+    let re = Regex::new(r"(?:(?:R|D|L|U)) (?:\d+) \(#(?<color>......)\)").unwrap();
+    
+    let new_input = input.trim().split("\n").map(|line|
+    {
+        let c = &re.captures(line).unwrap()["color"];
+        let mut chars = c.chars();
+        let dir = match chars.next_back().unwrap() {
+            '0' => 'R',
+            '1' => 'D',
+            '2' => 'L',
+            '3' => 'U',
+            _ => panic!(),
+        };
+        let length = u32::from_str_radix(chars.as_str(), 16).unwrap();
+        
+        return format!("{} {} (#{})\n", dir, length, c);
+    }).collect::<String>();
+    
+    return parse_input(new_input);
+}
+
 fn _represent_grid(grid: Vec<Vec<Option<String>>>) -> String {
     grid.iter()
         .map(|line| {
@@ -151,24 +173,11 @@ fn build_grid(
     .collect();
 
     for y in 0..grid.len() {
-        let mut inside_polygon = false;
-        let mut just_encountered_wall = false;
         for x in 0..grid[y].len() {
             let geo_coords = Point{x: x as i32 - offset.x, y: y as i32 - offset.y};
             for edge in edges.iter() {
                 if edge.has_point(&geo_coords) {
                     grid[y][x] = Some(edge.color.clone());
-                    
-                    if edge._dir == 'U' || edge._dir == 'D' {
-                        inside_polygon ^= true;
-                    }
-                    just_encountered_wall = true;
-                }
-            }
-            if grid[y][x].is_none() {
-                just_encountered_wall = false;
-                if inside_polygon {
-                    grid[y][x] = Some("ffffff".to_string());
                 }
             }
         }
@@ -177,10 +186,59 @@ fn build_grid(
     return grid;
 }
 
+fn _get_point_inside_polygon(grid: &Vec<Vec<Option<String>>>) -> Option<Point> {
+    // heuristic for getting a point that is inside the grid
+    let mut wall_encountered = false;
+    let y = grid.len()/2;
+    for (x, val) in grid[y].iter().enumerate() {
+        if val.is_some() {
+            wall_encountered = true;
+        }
+        if val.is_none() && wall_encountered {
+            return Some(Point{x: x as i32, y: y as i32}); 
+        }
+    }
+    return None;
+}
+
+fn _flood_point(grid: &mut Vec<Vec<Option<String>>>, p: Point) {
+    let y = p.y as usize;
+    let x = p.x as usize;
+    grid[y][x] = Some("ffffff".to_string());
+    if y - 1 > 0 && grid[y-1][x].is_none() {
+        _flood_point(grid, Point{y: p.y-1, x: p.x});
+    }
+    if y + 1 < grid.len() && grid[y+1][x].is_none() {
+        _flood_point(grid, Point{y: p.y+1, x: p.x});
+    }
+    if x - 1 > 0 && grid[y][x-1].is_none() {
+        _flood_point(grid, Point{y: p.y, x: p.x-1});
+    }
+    if x + 1 < grid[y].len() && grid[y][x+1].is_none() {
+        _flood_point(grid, Point{y: p.y, x: p.x+1});
+    }
+}
+
+fn flood_fill_grid(grid: &mut Vec<Vec<Option<String>>>) {
+    _flood_point(grid, _get_point_inside_polygon(grid).unwrap());
+}
+
 pub fn p1(input: String) {
     let (edges, ful, fdr) = parse_input(input);
-    let grid = build_grid(edges, ful, fdr);
+    let mut grid = build_grid(edges, ful, fdr);
 
-    println!("{}", _represent_grid(grid));
-    //println!("{}", compute_volume(grid));
+    flood_fill_grid(&mut grid);
+    
+    //println!("{}", _represent_grid(grid));
+    println!("{}", compute_volume(grid));
+}
+
+pub fn p2(input: String) {
+    let (edges, ful, fdr) = parse_input_p2(input);
+    let mut grid = build_grid(edges, ful, fdr);
+
+    flood_fill_grid(&mut grid);
+    
+    //println!("{}", _represent_grid(grid));
+    println!("{}", compute_volume(grid));
 }
