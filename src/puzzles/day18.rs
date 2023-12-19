@@ -148,6 +148,25 @@ fn _represent_grid(grid: Vec<Vec<Option<String>>>) -> String {
         .collect()
 }
 
+
+fn _represent_grid_p2(grid: Vec<Vec<Option<char>>>) -> String {
+    grid.iter()
+        .map(|line| {
+            line.iter()
+                .map(|point| {
+                    if point.is_none() {
+                        '.'
+                    } else {
+                        *point.as_ref().unwrap()
+                    }
+                })
+                .collect::<String>()
+                + "\n"
+        })
+        .collect()
+}
+
+
 fn compute_volume(grid: Vec<Vec<Option<String>>>) -> u32 {
     grid.iter()
         .map(|line| {
@@ -177,7 +196,14 @@ fn build_grid(
             let geo_coords = Point{x: x as i32 - offset.x, y: y as i32 - offset.y};
             for edge in edges.iter() {
                 if edge.has_point(&geo_coords) {
-                    grid[y][x] = Some(edge.color.clone());
+                    grid[y][x] = Some( //Some(edge.color.clone());
+                        match edge._dir {
+                            'U' => "▲".to_string(),
+                            'D' => "▼".to_string(),
+                            'L' => "◄".to_string(),
+                            'R' => "►".to_string(),
+                            _ => panic!(),
+                        });
                 }
             }
         }
@@ -233,12 +259,68 @@ pub fn p1(input: String) {
     println!("{}", compute_volume(grid));
 }
 
+
+fn compute_polygon(
+    edges: Vec<Edge>,
+    farthest_ul: Point,
+    farthest_dr: Point,
+) -> u64 {
+    let offset = Point{x: -farthest_ul.x, y: -farthest_ul.y};
+    let nb_lines = (farthest_dr.y + 1 + offset.y) as usize;
+    let line_length = (farthest_dr.x + 1 + offset.x) as usize;
+    
+    let mut total_area = 0u64;
+    
+    //let mut _grid: Vec<Vec<Option<char>>> = Vec::new();
+    
+    let mut last_line : Vec<Option<char>> = vec![None; line_length];
+    for y in 0..nb_lines {
+        let mut current_line = vec![None; line_length];
+        for x in 0..line_length {
+            let geo_coords = Point{x: x as i32 - offset.x, y: y as i32 - offset.y};
+            let mut edge_found = false;
+            for edge in edges.iter() {
+                if edge.has_point(&geo_coords) {
+                    current_line[x] = Some(
+                        match edge._dir {
+                            'U' => '▲',
+                            'D' => '▼',
+                            'L' => '◄',
+                            'R' => '►',
+                            _ => panic!(),
+                        });
+                        total_area += 1;
+                    edge_found = true;
+                }
+            }
+            if !edge_found {
+                // secret sauce: look at the previous line to guess whether we are inside the polygon
+                // this actually would work in all four direction so we could go 4x faster by splitting the grid
+                // and going at it in parallel.
+                // but that's not going to save me, this is just too slow.
+                if let Some(c) = last_line[x] {
+                    if (c == '►' || c == '▼' || c == '%') && ( x==0 || current_line[x-1].is_some() ){
+                        current_line[x] = Some('%');
+                        total_area += 1;
+                    }
+                }
+            }
+        }
+        //_grid.push(current_line.clone());
+        last_line = current_line;
+        if y%100 == 0 {
+            println!("line {:>20}/{}", y, nb_lines);
+        }
+    }
+    //println!("{}", _represent_grid_p2(_grid));
+    
+    return total_area;
+}
+
+
 pub fn p2(input: String) {
     let (edges, ful, fdr) = parse_input_p2(input);
-    let mut grid = build_grid(edges, ful, fdr);
+    let area = compute_polygon(edges, ful, fdr);
 
-    flood_fill_grid(&mut grid);
-    
-    //println!("{}", _represent_grid(grid));
-    println!("{}", compute_volume(grid));
+    println!("{}", area);
 }
