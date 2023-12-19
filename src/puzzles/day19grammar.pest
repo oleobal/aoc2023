@@ -1,0 +1,17 @@
+Brick = @{("." | "#" | "?")+}
+Map = @{ Brick+ }
+
+Number = { ASCII_DIGIT+ }
+Id = { ASCII_ALPHA_LOWER+ }
+
+Destination = { "A" | "R" | Id }
+Condition = { ("x" | "m" | "a" | "s") ~ (">" | "<") ~ Number }
+Rule = { (Condition ~ ":")? ~ Destination }
+Workflow = { Id ~ "{" ~ Rule ~ ( "," ~ Rule)*~ "}" ~ NEWLINE}
+Workflows = _{Workflow+}
+
+PartCharacteristic = { ("x" | "m" | "a" | "s") ~ "=" ~ Number }
+Part = {"{" ~ PartCharacteristic ~ "," ~ PartCharacteristic ~ "," ~ PartCharacteristic ~ "," ~ PartCharacteristic ~"}" ~ NEWLINE} 
+Parts = _{Part+}
+
+Program = {Workflows ~ NEWLINE ~ Parts }
