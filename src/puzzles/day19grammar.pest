@@ -8,10 +8,10 @@ Destination = { "A" | "R" | Id }
 Condition = { ("x" | "m" | "a" | "s") ~ (">" | "<") ~ Number }
 Rule = { (Condition ~ ":")? ~ Destination }
 Workflow = { Id ~ "{" ~ Rule ~ ( "," ~ Rule)*~ "}" ~ NEWLINE}
-Workflows = _{Workflow+}
+Workflows = {Workflow+}
 
 PartCharacteristic = { ("x" | "m" | "a" | "s") ~ "=" ~ Number }
 Part = {"{" ~ PartCharacteristic ~ "," ~ PartCharacteristic ~ "," ~ PartCharacteristic ~ "," ~ PartCharacteristic ~"}" ~ NEWLINE} 
-Parts = _{Part+}
+Parts = {Part+}
 
 Program = {Workflows ~ NEWLINE ~ Parts }

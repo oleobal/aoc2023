@@ -13,3 +13,7 @@ petgraph = "0.6.4"
 regex = "1.10.2"
 
 util = { path = "util" }
+
+[build-dependencies]
+pest = "2.7.5"
+pest_derive = "2.7.5"
